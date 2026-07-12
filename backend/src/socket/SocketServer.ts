@@ -7,10 +7,10 @@ export class SocketServer {
   private io: Server;
   private engine: SimulationEngine;
 
-  constructor(server: HttpServer, engine: SimulationEngine) {
+  constructor(server: HttpServer, engine: SimulationEngine, corsOrigin: string = '*') {
     this.io = new Server(server, {
       cors: {
-        origin: '*', // For dev, allow all
+        origin: corsOrigin,
         methods: ['GET', 'POST']
       }
     });

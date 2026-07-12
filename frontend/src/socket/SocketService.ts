@@ -4,7 +4,7 @@ import type { SimulationStateDTO } from '@shared/types';
 
 class SocketService {
   private socket: Socket | null = null;
-  private backendUrl = 'http://localhost:3001';
+  private backendUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
   public connect(): void {
     if (this.socket) return;

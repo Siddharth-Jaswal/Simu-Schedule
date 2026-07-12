@@ -33,12 +33,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <header className="border-b border-black/10 dark:border-white/5 bg-white/20 dark:bg-black/20 backdrop-blur-xl sticky top-0 z-50 transition-colors duration-500">
         <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-sim-purple flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20">
-              OS
-            </div>
-            <h1 className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/60">
-              Scheduler Lab
-            </h1>
+            {/* Logo and title removed as requested */}
           </div>
 
           <button 

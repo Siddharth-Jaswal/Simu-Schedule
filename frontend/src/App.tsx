@@ -8,11 +8,12 @@ import { LiveVisualization } from './components/visualization/LiveVisualization'
 import { CompletedTable } from './components/visualization/CompletedTable';
 import { GlobalMetrics } from './components/visualization/GlobalMetrics';
 import { EventLogConsole } from './components/visualization/EventLogConsole';
+import { Loader2 } from 'lucide-react';
 import type { ProcessDTO } from '@shared/types';
 import { apiClient } from './services/apiClient';
 
 function App() {
-  const { state, addEventLog, setIsRunning, setIsComplete, reset, hasStarted } = useSimulationStore();
+  const { state, addEventLog, setIsRunning, setIsComplete, reset, hasStarted, isConnected } = useSimulationStore();
 
   useEffect(() => {
     // Ensure we always start fresh on page load and avoid race conditions with socket connection
@@ -67,6 +68,22 @@ function App() {
       socketService.disconnect();
     };
   }, []); // Remove addEventLog dependency to prevent multiple re-renders causing multiple resets
+
+  if (!isConnected) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-pulse">
+          <Loader2 className="w-16 h-16 animate-spin text-primary" />
+          <div className="flex flex-col items-center gap-2">
+            <h2 className="text-2xl font-bold text-foreground">Waking up the server...</h2>
+            <p className="text-muted-foreground text-sm max-w-md text-center">
+              Please wait while we establish a connection. Free-tier servers may take up to 30 seconds to wake from sleep.
+            </p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

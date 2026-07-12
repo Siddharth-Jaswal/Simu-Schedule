@@ -1,6 +1,6 @@
 import type { SimulationConfig, ProcessDTO } from '@shared/types';
 
-const API_BASE = 'http://localhost:3001/api/simulation';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/simulation';
 
 export const apiClient = {
   start: async (config: SimulationConfig, processes: ProcessDTO[]) => {

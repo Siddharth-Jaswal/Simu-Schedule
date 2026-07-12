@@ -1,65 +1,109 @@
-# OS Scheduler Lab
+# Scheduler Lab
 
-OS Scheduler Lab is a real-time Operating System Process Scheduling Simulator built with React, Node.js, and WebSockets.
-Unlike traditional simulators, this project visually demonstrates every scheduling decision in real-time, resembling a modern developer tool like Chrome DevTools or VS Code.
+Scheduler Lab is a full-stack, real-time operating system CPU scheduling visualization tool. It provides a highly interactive and visually driven interface to understand, configure, and observe various CPU scheduling algorithms in action.
 
-## Features
+## Project Structure
 
-- **Real-Time Simulation**: Watch the CPU, Ready Queue, and Waiting Queues evolve instantly.
-- **Multiple Algorithms**:
-  - First-Come, First-Served (FCFS)
-  - Shortest Job First (SJF)
-  - Shortest Remaining Time First (SRTF)
-  - Round Robin (RR)
-  - Priority (Preemptive & Non-Preemptive)
-  - Multi-Level Feedback Queue (MLFQ)
-- **Live Metrics**: Monitor CPU utilization, throughput, waiting time, turnaround time, and context switches as they happen.
-- **Modern UI**: Built with TailwindCSS and Framer Motion for sleek glassmorphism designs and smooth transitions.
+The repository is structured as a monorepo containing a frontend and a backend, sharing common TypeScript definitions.
 
-## Tech Stack
+- `frontend/`: React application powered by Vite, Tailwind CSS, and Framer Motion.
+- `backend/`: Node.js Express server utilizing Socket.IO for real-time simulation streaming.
+- `shared/`: Shared TypeScript interfaces and types.
 
-- **Frontend**: React, TypeScript, Vite, TailwindCSS, Framer Motion, Recharts, Zustand.
-- **Backend**: Node.js, Express, Socket.io, TypeScript, Jest.
+## Prerequisites
 
-## Quick Start
+- Node.js (v18 or higher recommended)
+- npm or yarn
 
-### 1. Install Dependencies
+## Environment Configuration
 
-Open two terminal windows (one for frontend, one for backend):
+Both the frontend and backend require environment variables to function correctly, particularly for deployment or overriding default ports.
+
+### Backend
+
+Create a `.env` file in the `backend/` directory (you can copy `.env.example`):
 
 ```bash
-# Terminal 1 - Backend
+PORT=3001
+CORS_ORIGIN=http://localhost:5173
+```
+
+- `PORT`: The port on which the Express server and Socket.IO will listen.
+- `CORS_ORIGIN`: The allowed origin for cross-origin requests. Use your frontend URL.
+
+### Frontend
+
+Create a `.env` file in the `frontend/` directory (you can copy `.env.example`):
+
+```bash
+VITE_API_URL=http://localhost:3001/api/simulation
+VITE_SOCKET_URL=http://localhost:3001
+```
+
+- `VITE_API_URL`: The HTTP endpoint for the backend API.
+- `VITE_SOCKET_URL`: The WebSocket endpoint for the backend real-time server.
+
+## Running Locally
+
+To run the project on your local machine, you will need to start both the backend and frontend servers.
+
+### 1. Start the Backend
+
+Open a terminal and navigate to the backend directory:
+
+```bash
 cd backend
 npm install
-
-# Terminal 2 - Frontend
-cd frontend
-npm install
+npm run dev
 ```
 
-### 2. Start the Servers
+The backend will start using `nodemon` on the specified port (default 3001).
+
+### 2. Start the Frontend
+
+Open a new terminal and navigate to the frontend directory:
 
 ```bash
-# Terminal 1 - Backend (Starts on port 3001)
-npm run dev
-
-# Terminal 2 - Frontend (Starts on port 5173)
+cd frontend
+npm install
 npm run dev
 ```
 
-### 3. Open the App
-Navigate to `http://localhost:5173` in your browser. 
+The frontend will start using Vite (default port 5173). Navigate to `http://localhost:5173` in your browser.
 
-- Select an algorithm from the sidebar.
-- Adjust the number of processes or quantum time (if applicable).
-- Click **Start Simulation**.
-- You can dynamically adjust the simulation speed (1x, 2x, 10x) and pause/resume at will.
+## Deployment Guide
 
-## Architecture
+The architecture is designed to be easily deployed to modern cloud hosting platforms.
 
-The system uses an Event-Driven backend model:
-- **SimulationEngine**: Coordinates ticks and controls the flow.
-- **Clock**: Ticks at an adjustable rate.
-- **Dispatcher**: Handles Context Switches.
-- **Strategies**: Implements the Strategy Pattern for different algorithms.
-- **SocketServer**: Broadcasts state updates to the React frontend.
+### Deploying the Backend (e.g., to Render)
+
+1. Connect your repository to your hosting provider.
+2. Select the `backend` directory as the root if your provider supports it, or configure the build commands accordingly.
+3. Build Command: `npm install && npm run build`
+4. Start Command: `npm start`
+5. Environment Variables:
+   - Set `CORS_ORIGIN` to your deployed frontend URL.
+   - The hosting provider will typically inject the `PORT` automatically.
+
+### Deploying the Frontend (e.g., to Vercel)
+
+1. Connect your repository to Vercel.
+2. Set the Root Directory to `frontend`.
+3. The framework preset should automatically detect Vite.
+4. Environment Variables:
+   - Set `VITE_API_URL` to your deployed backend URL (e.g., `https://your-backend.onrender.com/api/simulation`).
+   - Set `VITE_SOCKET_URL` to your deployed backend URL (e.g., `https://your-backend.onrender.com`).
+5. Deploy.
+
+## Available Scripts
+
+### Backend (`backend/package.json`)
+- `npm run dev`: Starts the server with hot-reloading via nodemon.
+- `npm run build`: Compiles the TypeScript source code into the `dist/` directory.
+- `npm start`: Runs the compiled output from the `dist/` directory (used for production).
+- `npm test`: Runs the Jest test suite.
+
+### Frontend (`frontend/package.json`)
+- `npm run dev`: Starts the Vite development server.
+- `npm run build`: Builds the application for production into the `dist/` directory.
+- `npm run preview`: Bootstraps a local static web server to preview the production build.

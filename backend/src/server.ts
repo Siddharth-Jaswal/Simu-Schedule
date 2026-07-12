@@ -5,16 +5,21 @@ import { SocketServer } from './socket/SocketServer';
 import { createApiRouter } from './routes/api';
 import cors from 'cors';
 
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 const app = express();
 const server = createServer(app);
 
-app.use(cors());
+const corsOrigin = process.env.CORS_ORIGIN || '*';
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
 const engine = new SimulationEngine();
 
 // Setup WebSocket server
-new SocketServer(server, engine);
+new SocketServer(server, engine, corsOrigin);
 
 // Setup API routes
 app.use('/api/simulation', createApiRouter(engine));
