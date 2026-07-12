@@ -25,7 +25,7 @@ function App() {
     // Subscribe to events for EventLogConsole
     const handleEvent = (data: { type: string, payload: { process?: ProcessDTO, time?: number, from?: string, to?: string }}) => {
       const { type, payload } = data;
-      const t = payload.time ?? state?.clock ?? 0;
+      const t = payload.time ?? useSimulationStore.getState().state?.clock ?? 0;
       
       switch(type) {
         case 'PROCESS_ARRIVAL':
@@ -55,7 +55,7 @@ function App() {
     return () => {
       socketService.disconnect();
     };
-  }, [addEventLog, state?.clock]);
+  }, [addEventLog]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { over, active } = event;
