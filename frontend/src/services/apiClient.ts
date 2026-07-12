@@ -1,4 +1,4 @@
-import { SimulationConfig, ProcessDTO } from '@shared/types';
+import type { SimulationConfig, ProcessDTO } from '@shared/types';
 
 const API_BASE = 'http://localhost:3001/api';
 

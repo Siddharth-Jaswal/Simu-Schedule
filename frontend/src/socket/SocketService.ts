@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { useSimulationStore } from '../store/useSimulationStore';
-import { SimulationStateDTO } from '@shared/types';
+import type { SimulationStateDTO } from '@shared/types';
 
 class SocketService {
   private socket: Socket | null = null;

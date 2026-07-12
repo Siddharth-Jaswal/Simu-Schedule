@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { SimulationStateDTO, ProcessDTO, SimulationConfig } from '@shared/types';
+import type { SimulationStateDTO, ProcessDTO, SimulationConfig } from '@shared/types';
 
 interface SimulationStore {
   // Connection state

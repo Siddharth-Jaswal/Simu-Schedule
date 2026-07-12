@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Play, Square, FastForward, RotateCcw } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
 import { useSimulationStore } from '../../store/useSimulationStore';
-import { ProcessDTO } from '@shared/types';
+import type { ProcessDTO } from '@shared/types';
 
 export function SimulationControls() {
   const [algorithms, setAlgorithms] = useState<string[]>([]);
