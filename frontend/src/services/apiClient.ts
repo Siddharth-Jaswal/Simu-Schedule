@@ -1,6 +1,6 @@
 import type { SimulationConfig, ProcessDTO } from '@shared/types';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = 'http://localhost:3001/api/simulation';
 
 export const apiClient = {
   start: async (config: SimulationConfig, processes: ProcessDTO[]) => {
@@ -36,6 +36,20 @@ export const apiClient = {
   },
 
   getAlgorithms: async () => {
+    // algorithms is not technically under /simulation usually, but we mapped the whole router there
     return fetch(`${API_BASE}/algorithms`).then(res => res.json());
+  },
+
+  addProcess: async (process: ProcessDTO) => {
+    return fetch(`${API_BASE}/processes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(process),
+    }).then(res => {
+      if (!res.ok) {
+        return res.json().then(err => { throw new Error(err.error) });
+      }
+      return res.json();
+    });
   }
 };

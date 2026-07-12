@@ -19,10 +19,15 @@ interface SimulationStore {
   // Local Config
   config: SimulationConfig;
   setConfig: (config: SimulationConfig) => void;
-  
+
   // App state
   isRunning: boolean;
   setIsRunning: (status: boolean) => void;
+
+  // Staging for Drag & Drop
+  stagedProcesses: ProcessDTO[];
+  addStagedProcess: (process: ProcessDTO) => void;
+  removeStagedProcess: (pid: string) => void;
   
   reset: () => void;
 }
@@ -63,5 +68,13 @@ export const useSimulationStore = create<SimulationStore>((set) => ({
   isRunning: false,
   setIsRunning: (status) => set({ isRunning: status }),
 
-  reset: () => set({ state: null, processes: {}, isRunning: false })
+  stagedProcesses: [],
+  addStagedProcess: (process) => set((store) => ({
+    stagedProcesses: [...store.stagedProcesses, process]
+  })),
+  removeStagedProcess: (pid) => set((store) => ({
+    stagedProcesses: store.stagedProcesses.filter(p => p.pid !== pid)
+  })),
+
+  reset: () => set({ state: null, processes: {}, isRunning: false, stagedProcesses: [] })
 }));

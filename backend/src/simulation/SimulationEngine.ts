@@ -8,6 +8,7 @@ import { SimulationEventType } from '../events/SimulationEvents';
 import { SchedulingStrategy } from '../interfaces/SchedulingStrategy';
 import { SchedulerFactory } from '../factories/SchedulerFactory';
 import { SimulationStateDTO, SimulationConfig } from '@shared/types';
+import { ArrivalManager } from './ArrivalManager';
 
 export class SimulationEngine {
   public emitter: SimulationEventEmitter;
@@ -15,10 +16,12 @@ export class SimulationEngine {
   public cpu: CPU;
   public dispatcher: Dispatcher;
   public metricsCollector: MetricsCollector;
+  public arrivalManager: ArrivalManager;
   
   private strategy: SchedulingStrategy | null = null;
-  private processes: Process[] = [];
-  private waitingProcesses: Process[] = []; // Currently not doing I/O wait, but good to have
+  private allProcesses: Process[] = [];
+  private readyQueue: Process[] = [];
+  private waitingProcesses: Process[] = [];
   private completedProcesses: Process[] = [];
 
   constructor() {
@@ -27,6 +30,7 @@ export class SimulationEngine {
     this.cpu = new CPU(this.emitter);
     this.dispatcher = new Dispatcher(this.cpu);
     this.metricsCollector = new MetricsCollector(this.emitter);
+    this.arrivalManager = new ArrivalManager(this.emitter);
 
     this.setupListeners();
   }
@@ -34,9 +38,10 @@ export class SimulationEngine {
   public init(config: SimulationConfig, initialProcesses: Process[]): void {
     this.reset();
     this.strategy = SchedulerFactory.create(config);
-    this.processes = [...initialProcesses];
+    
     // Sort processes by arrival time initially
-    this.processes.sort((a, b) => a.arrivalTime - b.arrivalTime);
+    const sorted = [...initialProcesses].sort((a, b) => a.arrivalTime - b.arrivalTime);
+    this.allProcesses = sorted;
   }
 
   public start(): void {
@@ -54,7 +59,8 @@ export class SimulationEngine {
   public reset(): void {
     this.clock.reset();
     this.metricsCollector.reset();
-    this.processes = [];
+    this.allProcesses = [];
+    this.readyQueue = [];
     this.waitingProcesses = [];
     this.completedProcesses = [];
     this.strategy = null;
@@ -75,7 +81,7 @@ export class SimulationEngine {
       cpu: {
         running: this.cpu.getRunningProcess()?.pid || null
       },
-      readyQueue: this.strategy ? this.strategy.getQueue().map(p => p.pid) : [],
+      readyQueue: this.readyQueue.map(p => p.pid),
       waitingQueue: this.waitingProcesses.map(p => p.pid),
       completed: this.completedProcesses.map(p => p.pid),
       metrics: this.metricsCollector.getMetrics()
@@ -87,8 +93,16 @@ export class SimulationEngine {
       this.handleTick(time);
     });
 
+    this.emitter.on(SimulationEventType.PROCESS_ARRIVAL, ({ process }) => {
+      // Dynamic or static arrival
+      if (!this.allProcesses.find(p => p.pid === process.pid)) {
+        this.allProcesses.push(process);
+      }
+      this.readyQueue.push(process);
+    });
+
     this.emitter.on(SimulationEventType.PROCESS_COMPLETED, ({ process }) => {
-      const p = this.processes.find(x => x.pid === process.pid);
+      const p = this.allProcesses.find(x => x.pid === process.pid);
       if (p) {
         this.completedProcesses.push(p);
       }
@@ -98,23 +112,27 @@ export class SimulationEngine {
   private handleTick(currentTime: number): void {
     if (!this.strategy) return;
 
-    // 1. Check for arriving processes
-    const arriving = this.processes.filter(p => p.arrivalTime === currentTime && p.state === 'NEW');
+    // 1. Check for arriving static processes that were pre-loaded
+    const arriving = this.allProcesses.filter(p => p.arrivalTime === currentTime && p.state === 'NEW');
     for (const p of arriving) {
       p.setReady();
-      this.strategy.addProcess(p);
-      this.emitter.emit(SimulationEventType.PROCESS_ARRIVAL, { process: p.toDTO() });
+      this.emitter.emit(SimulationEventType.PROCESS_ARRIVAL, { process: p });
     }
 
     // 2. Increase wait time for processes in ready queue
-    const readyQueueProcesses = this.strategy.getQueue();
-    for (const p of readyQueueProcesses) {
+    for (const p of this.readyQueue) {
       p.waitTick();
     }
 
-    // 3. Scheduler selects process
+    // 3. Scheduler selects process using pure strategy
     const currentRunning = this.cpu.getRunningProcess();
-    const nextProcess = this.strategy.getNextProcess(currentTime, currentRunning);
+    const { nextProcess, updatedQueue } = this.strategy.getNextProcess(
+      this.readyQueue,
+      currentTime,
+      currentRunning
+    );
+
+    this.readyQueue = updatedQueue;
 
     // 4. Dispatcher context switch
     this.dispatcher.dispatch(nextProcess, currentTime);
@@ -123,7 +141,7 @@ export class SimulationEngine {
     this.cpu.executeTick(currentTime);
 
     // Optional check: if all processes are completed, auto-pause
-    if (this.completedProcesses.length === this.processes.length && this.processes.length > 0) {
+    if (this.completedProcesses.length === this.allProcesses.length && this.allProcesses.length > 0) {
       this.clock.pause();
     }
   }

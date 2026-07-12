@@ -64,5 +64,16 @@ export function createApiRouter(engine: SimulationEngine): Router {
     ]);
   });
 
+  router.post('/processes', (req, res) => {
+    try {
+      const processDto: ProcessDTO = req.body;
+      const currentTime = engine.clock.getTime();
+      engine.arrivalManager.processDynamicArrival(processDto, currentTime);
+      res.json({ status: 'process_added' });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   return router;
 }

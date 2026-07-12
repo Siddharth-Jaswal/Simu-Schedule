@@ -17,7 +17,7 @@ const engine = new SimulationEngine();
 new SocketServer(server, engine);
 
 // Setup API routes
-app.use('/api', createApiRouter(engine));
+app.use('/api/simulation', createApiRouter(engine));
 
 const PORT = process.env.PORT || 3001;
 

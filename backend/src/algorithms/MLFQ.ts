@@ -1,87 +1,71 @@
 import { SchedulingStrategy } from '../interfaces/SchedulingStrategy';
 import { Process } from '../core/Process';
-import { FIFOQueue } from '../queue/ReadyQueue';
 
 export class MLFQ implements SchedulingStrategy {
-  private queues: FIFOQueue[] = [];
-  private timeQuantums: number[] = [2, 4, 8]; // Example quantums for 3 queues
+  private timeQuantums: number[] = [2, 4, 8]; // 3 queues
   private currentProcessLevel: Map<string, number> = new Map();
   private currentQuantumTicks: number = 0;
 
   constructor(quantums: number[] = [2, 4, 8]) {
     this.timeQuantums = quantums;
-    for (let i = 0; i < quantums.length; i++) {
-      this.queues.push(new FIFOQueue());
-    }
   }
 
-  addProcess(process: Process): void {
-    // New processes go to the highest priority queue (index 0)
-    if (!this.currentProcessLevel.has(process.pid)) {
-      this.currentProcessLevel.set(process.pid, 0);
-    }
-    const level = this.currentProcessLevel.get(process.pid) || 0;
-    this.queues[level].enqueue(process);
-  }
+  getNextProcess(
+    readyQueue: Process[],
+    currentTime: number,
+    currentRunningProcess: Process | null
+  ): { nextProcess: Process | null; updatedQueue: Process[] } {
+    let updatedQueue = [...readyQueue];
 
-  getNextProcess(currentTime: number, currentRunningProcess: Process | null): Process | null {
-    let currentLevel = 0;
+    // Ensure all processes have a known level (default 0 for new arrivals)
+    for (const p of updatedQueue) {
+      if (!this.currentProcessLevel.has(p.pid)) {
+        this.currentProcessLevel.set(p.pid, 0);
+      }
+    }
+
     if (currentRunningProcess && !currentRunningProcess.isCompleted()) {
-      currentLevel = this.currentProcessLevel.get(currentRunningProcess.pid) || 0;
+      let currentLevel = this.currentProcessLevel.get(currentRunningProcess.pid) || 0;
       this.currentQuantumTicks++;
 
       if (this.currentQuantumTicks >= this.timeQuantums[currentLevel]) {
-        // Quantum expired, demote process if not at lowest queue
-        const nextLevel = Math.min(currentLevel + 1, this.queues.length - 1);
+        // Quantum expired, demote process
+        const nextLevel = Math.min(currentLevel + 1, this.timeQuantums.length - 1);
         this.currentProcessLevel.set(currentRunningProcess.pid, nextLevel);
-        this.queues[nextLevel].enqueue(currentRunningProcess);
+        updatedQueue.push(currentRunningProcess);
         this.currentQuantumTicks = 0;
-        return this.fetchNextFromQueues();
+        return this.selectHighestPriorityProcess(updatedQueue);
       }
 
-      // Check if a higher priority process has arrived
-      for (let i = 0; i < currentLevel; i++) {
-        if (!this.queues[i].isEmpty()) {
-          // Preempt current process by higher priority queue
-          this.queues[currentLevel].enqueue(currentRunningProcess);
-          this.currentQuantumTicks = 0;
-          return this.fetchNextFromQueues();
-        }
+      // Check for strictly higher priority arrivals
+      // A process is higher priority if its level < currentLevel
+      const hasHigherPriority = updatedQueue.some(p => (this.currentProcessLevel.get(p.pid) || 0) < currentLevel);
+      if (hasHigherPriority) {
+        updatedQueue.push(currentRunningProcess);
+        this.currentQuantumTicks = 0;
+        return this.selectHighestPriorityProcess(updatedQueue);
       }
 
-      // Continue running the current process
-      return currentRunningProcess;
+      // Keep running
+      return { nextProcess: currentRunningProcess, updatedQueue };
     }
 
     this.currentQuantumTicks = 0;
-    return this.fetchNextFromQueues();
+    return this.selectHighestPriorityProcess(updatedQueue);
   }
 
-  removeProcess(pid: string): void {
-    for (const queue of this.queues) {
-      queue.remove(pid);
-    }
-  }
+  private selectHighestPriorityProcess(queue: Process[]): { nextProcess: Process | null; updatedQueue: Process[] } {
+    if (queue.length === 0) return { nextProcess: null, updatedQueue: queue };
 
-  getQueue(): Process[] {
-    // Return a flattened view of all queues for the visualizer
-    const allProcesses: Process[] = [];
-    for (const queue of this.queues) {
-      allProcesses.push(...queue.getProcesses());
-    }
-    return allProcesses;
-  }
+    // Sort queue such that processes in level 0 come before level 1, then by arrival time
+    queue.sort((a, b) => {
+      const levelA = this.currentProcessLevel.get(a.pid) || 0;
+      const levelB = this.currentProcessLevel.get(b.pid) || 0;
+      if (levelA === levelB) return a.arrivalTime - b.arrivalTime;
+      return levelA - levelB;
+    });
 
-  isEmpty(): boolean {
-    return this.queues.every(q => q.isEmpty());
-  }
-
-  private fetchNextFromQueues(): Process | null {
-    for (let i = 0; i < this.queues.length; i++) {
-      if (!this.queues[i].isEmpty()) {
-        return this.queues[i].dequeue();
-      }
-    }
-    return null;
+    const nextProcess = queue.shift() || null;
+    return { nextProcess, updatedQueue: queue };
   }
 }

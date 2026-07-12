@@ -2,36 +2,28 @@ import { SchedulingStrategy } from '../interfaces/SchedulingStrategy';
 import { Process } from '../core/Process';
 
 export class SJF implements SchedulingStrategy {
-  private queue: Process[] = [];
+  getNextProcess(
+    readyQueue: Process[],
+    currentTime: number,
+    currentRunningProcess: Process | null
+  ): { nextProcess: Process | null; updatedQueue: Process[] } {
+    let updatedQueue = [...readyQueue];
 
-  addProcess(process: Process): void {
-    this.queue.push(process);
-    // Sort by burstTime
-    this.queue.sort((a, b) => a.burstTime - b.burstTime);
-  }
-
-  getNextProcess(currentTime: number, currentRunningProcess: Process | null): Process | null {
-    // Non-preemptive: if currently running, keep it
     if (currentRunningProcess && !currentRunningProcess.isCompleted()) {
-      return currentRunningProcess;
+      return { nextProcess: currentRunningProcess, updatedQueue };
     }
 
-    if (this.queue.length === 0) return null;
-    return this.queue.shift() || null;
-  }
-
-  removeProcess(pid: string): void {
-    const index = this.queue.findIndex(p => p.pid === pid);
-    if (index !== -1) {
-      this.queue.splice(index, 1);
+    if (updatedQueue.length === 0) {
+      return { nextProcess: null, updatedQueue };
     }
-  }
 
-  getQueue(): Process[] {
-    return [...this.queue];
-  }
+    // Sort by shortest burst time
+    updatedQueue.sort((a, b) => {
+      if (a.burstTime === b.burstTime) return a.arrivalTime - b.arrivalTime;
+      return a.burstTime - b.burstTime;
+    });
 
-  isEmpty(): boolean {
-    return this.queue.length === 0;
+    const nextProcess = updatedQueue.shift() || null;
+    return { nextProcess, updatedQueue };
   }
 }

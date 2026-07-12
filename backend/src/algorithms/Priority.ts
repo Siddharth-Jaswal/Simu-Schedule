@@ -2,7 +2,6 @@ import { SchedulingStrategy } from '../interfaces/SchedulingStrategy';
 import { Process } from '../core/Process';
 
 export class Priority implements SchedulingStrategy {
-  private queue: Process[] = [];
   private isPreemptive: boolean;
 
   // Assuming lower number means higher priority
@@ -10,70 +9,50 @@ export class Priority implements SchedulingStrategy {
     this.isPreemptive = isPreemptive;
   }
 
-  addProcess(process: Process): void {
-    this.queue.push(process);
-    this.sortQueue();
-  }
+  getNextProcess(
+    readyQueue: Process[],
+    currentTime: number,
+    currentRunningProcess: Process | null
+  ): { nextProcess: Process | null; updatedQueue: Process[] } {
+    let updatedQueue = [...readyQueue];
 
-  getNextProcess(currentTime: number, currentRunningProcess: Process | null): Process | null {
     if (!this.isPreemptive) {
       if (currentRunningProcess && !currentRunningProcess.isCompleted()) {
-        return currentRunningProcess;
+        return { nextProcess: currentRunningProcess, updatedQueue };
       }
-      if (this.queue.length === 0) return null;
-      return this.queue.shift() || null;
+      if (updatedQueue.length === 0) return { nextProcess: null, updatedQueue };
+      
+      this.sortQueue(updatedQueue);
+      return { nextProcess: updatedQueue.shift() || null, updatedQueue };
     } else {
       // Preemptive
-      let candidates = [...this.queue];
+      let candidates = [...updatedQueue];
       if (currentRunningProcess && !currentRunningProcess.isCompleted()) {
         candidates.push(currentRunningProcess);
       }
 
-      if (candidates.length === 0) return null;
+      if (candidates.length === 0) return { nextProcess: null, updatedQueue };
 
-      candidates.sort((a, b) => {
-        if (a.priority === b.priority) return a.arrivalTime - b.arrivalTime;
-        return a.priority - b.priority;
-      });
-
+      this.sortQueue(candidates);
       const bestProcess = candidates[0];
 
       if (currentRunningProcess && bestProcess.pid === currentRunningProcess.pid) {
-        return currentRunningProcess;
+        return { nextProcess: currentRunningProcess, updatedQueue };
       }
 
       if (currentRunningProcess && !currentRunningProcess.isCompleted()) {
-        if (!this.queue.find(p => p.pid === currentRunningProcess.pid)) {
-          this.queue.push(currentRunningProcess);
-        }
+        updatedQueue.push(currentRunningProcess);
       }
 
-      this.removeProcess(bestProcess.pid);
-      this.sortQueue();
-
-      return bestProcess;
+      updatedQueue = updatedQueue.filter(p => p.pid !== bestProcess.pid);
+      return { nextProcess: bestProcess, updatedQueue };
     }
   }
 
-  removeProcess(pid: string): void {
-    const index = this.queue.findIndex(p => p.pid === pid);
-    if (index !== -1) {
-      this.queue.splice(index, 1);
-    }
-  }
-
-  getQueue(): Process[] {
-    return [...this.queue];
-  }
-
-  isEmpty(): boolean {
-    return this.queue.length === 0;
-  }
-
-  private sortQueue(): void {
-    this.queue.sort((a, b) => {
+  private sortQueue(queue: Process[]): void {
+    queue.sort((a, b) => {
       if (a.priority === b.priority) return a.arrivalTime - b.arrivalTime;
-      return a.priority - b.priority;
+      return a.priority - b.priority; // Lower number = higher priority
     });
   }
 }
