@@ -123,7 +123,7 @@ export class SimulationEngine {
     if (!this.strategy) return;
 
     // 1. Check for arriving static processes that were pre-loaded
-    const arriving = this.allProcesses.filter(p => p.arrivalTime === currentTime && p.state === 'NEW');
+    const arriving = this.allProcesses.filter(p => p.arrivalTime <= currentTime && p.state === 'NEW');
     for (const p of arriving) {
       p.setReady();
       this.emitter.emit(SimulationEventType.PROCESS_ARRIVAL, { process: p });
