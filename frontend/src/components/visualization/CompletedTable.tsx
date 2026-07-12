@@ -1,11 +1,12 @@
 import { useSimulationStore } from '../../store/useSimulationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
+import type { ProcessDTO } from '@shared/types';
 
 export function CompletedTable() {
   const { state, processes } = useSimulationStore();
   
-  const completedProcesses = (state?.completed || []).map(pid => processes[pid]).filter(Boolean);
+  const completedProcesses = (state?.completed || []).map((pid: string) => processes[pid]).filter(Boolean);
 
   return (
     <div className="glass-panel p-6 rounded-2xl mb-8 border border-border/50">
@@ -36,7 +37,7 @@ export function CompletedTable() {
             </thead>
             <tbody className="divide-y divide-border/30">
               <AnimatePresence>
-                {completedProcesses.map(p => (
+                {completedProcesses.map((p: ProcessDTO) => (
                   <motion.tr 
                     key={p.pid} 
                     initial={{ opacity: 0, y: -10 }}

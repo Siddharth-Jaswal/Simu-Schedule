@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import type { ProcessDTO } from '@shared/types';
-import { Clock, Hash, Zap } from 'lucide-react';
+import { Clock, Zap } from 'lucide-react';
 
 interface ProcessNodeProps {
   process: ProcessDTO;

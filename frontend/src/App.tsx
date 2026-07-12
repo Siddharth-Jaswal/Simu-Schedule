@@ -13,7 +13,7 @@ import type { ProcessDTO } from '@shared/types';
 import { apiClient } from './services/apiClient';
 
 function App() {
-  const { state, addEventLog, setIsRunning, setIsComplete, reset, hasStarted, isConnected } = useSimulationStore();
+  const { addEventLog, reset, hasStarted, isConnected } = useSimulationStore();
 
   useEffect(() => {
     // Ensure we always start fresh on page load and avoid race conditions with socket connection

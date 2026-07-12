@@ -30,13 +30,6 @@ interface SimulationStore {
   isComplete: boolean;
   setIsComplete: (status: boolean) => void;
 
-  // Staging for Drag & Drop (Dynamic Injection)
-  stagedProcesses: ProcessDTO[];
-  addStagedProcess: (process: ProcessDTO) => void;
-  removeStagedProcess: (pid: string) => void;
-  showInjectModal: boolean;
-  setShowInjectModal: (show: boolean) => void;
-
   // Pre-simulation Workload
   queuedWorkload: ProcessDTO[];
   addQueuedProcess: (process: ProcessDTO) => void;
@@ -115,7 +108,6 @@ export const useSimulationStore = create<SimulationStore>((set) => ({
     hasStarted: false,
     isFinishedInstantly: false,
     isComplete: false,
-    stagedProcesses: [], 
     eventLogs: [],
     metricsHistory: [] 
     // Notice: we don't clear queuedWorkload on reset so they can replay

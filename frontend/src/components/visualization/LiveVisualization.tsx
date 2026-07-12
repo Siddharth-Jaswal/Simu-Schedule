@@ -2,13 +2,13 @@ import { useSimulationStore } from '../../store/useSimulationStore';
 import { Cpu, Users } from 'lucide-react';
 import { ProcessNode } from './ProcessNode';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useDroppable } from '@dnd-kit/core';
 import { GanttChart } from './GanttChart';
+import type { ProcessDTO } from '@shared/types';
 
 export function LiveVisualization() {
   const { state, processes } = useSimulationStore();
   
-  const readyProcesses = (state?.readyQueue || []).map(pid => processes[pid]).filter(Boolean);
+  const readyProcesses = (state?.readyQueue || []).map((pid: string) => processes[pid]).filter(Boolean);
   const runningProcess = state?.cpu.running ? processes[state.cpu.running] : null;
 
   return (
@@ -74,7 +74,7 @@ export function LiveVisualization() {
              ) : (
                <div className="flex gap-4 items-center">
                  <AnimatePresence>
-                   {readyProcesses.map((process, idx) => (
+                   {readyProcesses.map((process: ProcessDTO, idx: number) => (
                      <motion.div 
                        key={process.pid} 
                        layout

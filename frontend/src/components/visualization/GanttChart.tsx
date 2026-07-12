@@ -17,7 +17,7 @@ export function GanttChart() {
             Waiting for execution data...
           </div>
         ) : (
-          history.map((slice, idx) => {
+          history.map((slice: { pid: string, start: number, end: number }, idx: number) => {
             const p = processes[slice.pid];
             const duration = slice.end - slice.start;
             const widthPct = (duration / maxTime) * 100;

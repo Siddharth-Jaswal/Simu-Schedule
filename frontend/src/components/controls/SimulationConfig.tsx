@@ -6,7 +6,7 @@ import type { ProcessDTO } from '@shared/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function SimulationConfig() {
-  const { state, config, setConfig, queuedWorkload, addQueuedProcess, removeQueuedProcess, setIsRunning, hasStarted, setHasStarted } = useSimulationStore();
+  const { config, setConfig, queuedWorkload, addQueuedProcess, removeQueuedProcess, setIsRunning, hasStarted, setHasStarted } = useSimulationStore();
   const [algorithms, setAlgorithms] = useState<string[]>([]);
   
   const [arrivalTime, setArrivalTime] = useState<number | string>(0);
@@ -15,7 +15,7 @@ export function SimulationConfig() {
 
   useEffect(() => {
     apiClient.getAlgorithms()
-      .then(algs => setAlgorithms(algs.filter(a => a !== 'MLFQ')))
+      .then(algs => setAlgorithms(algs.filter((a: string) => a !== 'MLFQ')))
       .catch(console.error);
   }, []);
 
