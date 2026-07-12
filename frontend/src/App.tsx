@@ -9,12 +9,14 @@ import { CompletedTable } from './components/visualization/CompletedTable';
 import { GlobalMetrics } from './components/visualization/GlobalMetrics';
 import { EventLogConsole } from './components/visualization/EventLogConsole';
 import { FloatingInjectModal } from './components/controls/FloatingInjectModal';
-import { DndContext } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import type { ProcessDTO } from '@shared/types';
 import { apiClient } from './services/apiClient';
 import { Plus } from 'lucide-react';
 import { DraggableProcess } from './components/controls/DraggableProcess';
+import { ProcessNode } from './components/visualization/ProcessNode';
+import { useState } from 'react';
 
 function App() {
   const { state, removeStagedProcess, setShowInjectModal, stagedProcesses, addEventLog } = useSimulationStore();
@@ -58,7 +60,16 @@ function App() {
     };
   }, [addEventLog]);
 
+  const [activeDragProcess, setActiveDragProcess] = useState<ProcessDTO | null>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const processDto = active.data.current?.process;
+    if (processDto) setActiveDragProcess(processDto);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragProcess(null);
     const { over, active } = event;
     if (over && over.id === 'ready-queue-dropzone') {
       const processDto = active.data.current?.process;
@@ -78,10 +89,10 @@ function App() {
   const hasStarted = state !== null;
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <MainLayout>
         
-        {/* SECTION 1: Config & Workload (Hidden if running, unless user wants to see it? Actually let's hide it when started to focus on simulation) */}
+        {/* SECTION 1: Config & Workload */}
         {!hasStarted ? (
           <SimulationConfig />
         ) : (
@@ -127,6 +138,14 @@ function App() {
           </button>
         </div>
       )}
+
+      <DragOverlay dropAnimation={null}>
+        {activeDragProcess ? (
+          <div className="opacity-90 scale-105 shadow-2xl cursor-grabbing">
+            <ProcessNode process={activeDragProcess} />
+          </div>
+        ) : null}
+      </DragOverlay>
       
     </DndContext>
   );

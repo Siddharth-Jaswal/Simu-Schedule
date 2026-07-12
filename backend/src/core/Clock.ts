@@ -27,6 +27,10 @@ export class Clock {
   public start(): void {
     if (!this.isRunning) {
       this.isRunning = true;
+      if (this.currentTime === 0) {
+        // Emit tick 0 immediately to process 0-arrival processes
+        this.emitter.emit(SimulationEventType.TICK, { time: this.currentTime });
+      }
       this.scheduleNextTick();
     }
   }
@@ -52,6 +56,9 @@ export class Clock {
   }
 
   public step(): void {
+    if (this.currentTime === 0) {
+      this.emitter.emit(SimulationEventType.TICK, { time: this.currentTime });
+    }
     this.tick();
   }
 

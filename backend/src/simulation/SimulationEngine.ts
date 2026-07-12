@@ -129,12 +129,7 @@ export class SimulationEngine {
       this.emitter.emit(SimulationEventType.PROCESS_ARRIVAL, { process: p });
     }
 
-    // 2. Increase wait time for processes in ready queue
-    for (const p of this.readyQueue) {
-      p.waitTick();
-    }
-
-    // 3. Scheduler selects process using pure strategy
+    // 2. Scheduler selects process using pure strategy
     const currentRunning = this.cpu.getRunningProcess();
     const { nextProcess, updatedQueue } = this.strategy.getNextProcess(
       this.readyQueue,
@@ -143,6 +138,11 @@ export class SimulationEngine {
     );
 
     this.readyQueue = updatedQueue;
+
+    // 3. Increase wait time for processes left in ready queue
+    for (const p of this.readyQueue) {
+      p.waitTick();
+    }
 
     // 4. Dispatcher context switch
     this.dispatcher.dispatch(nextProcess, currentTime);
