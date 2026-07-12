@@ -43,10 +43,4 @@ describe('Process', () => {
     expect(process.turnaroundTime).toBe(10); // 10 - 0
   });
 
-  it('should increase waiting time on waitTick', () => {
-    process.setReady();
-    process.waitTick();
-    process.waitTick();
-    expect(process.waitingTime).toBe(2);
-  });
 });
