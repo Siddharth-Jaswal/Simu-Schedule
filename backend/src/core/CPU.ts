@@ -20,7 +20,7 @@ export class CPU {
     if (prev && prev !== process) {
       if (!prev.isCompleted()) {
         prev.setReady();
-        this.emitter.emit(SimulationEventType.PROCESS_PREEMPTED, { process: prev.toDTO(), time: currentTime });
+        this.emitter.emit(SimulationEventType.PROCESS_PREEMPTED, { process: prev, time: currentTime });
       }
     }
 
@@ -28,7 +28,7 @@ export class CPU {
     
     if (this.currentProcess) {
       this.currentProcess.setRunning(currentTime);
-      this.emitter.emit(SimulationEventType.PROCESS_SCHEDULED, { process: this.currentProcess.toDTO(), time: currentTime });
+      this.emitter.emit(SimulationEventType.PROCESS_SCHEDULED, { process: this.currentProcess, time: currentTime });
     }
 
     if (prev?.pid !== process?.pid) {
@@ -47,7 +47,7 @@ export class CPU {
       if (this.currentProcess.isCompleted()) {
         this.currentProcess.terminate(currentTime);
         this.emitter.emit(SimulationEventType.PROCESS_COMPLETED, { 
-          process: this.currentProcess.toDTO(), 
+          process: this.currentProcess, 
           time: currentTime 
         });
         this.currentProcess = null; // Free CPU

@@ -1,4 +1,5 @@
-import { ProcessDTO, MetricsDTO } from '@shared/types';
+import { MetricsDTO } from '@shared/types';
+import { Process } from '../core/Process';
 
 export enum SimulationEventType {
   TICK = 'TickEvent',
@@ -13,10 +14,10 @@ export enum SimulationEventType {
 
 export interface SimulationEventPayloads {
   [SimulationEventType.TICK]: { time: number };
-  [SimulationEventType.PROCESS_ARRIVAL]: { process: ProcessDTO };
-  [SimulationEventType.PROCESS_SCHEDULED]: { process: ProcessDTO; time: number };
-  [SimulationEventType.PROCESS_COMPLETED]: { process: ProcessDTO; time: number };
-  [SimulationEventType.PROCESS_PREEMPTED]: { process: ProcessDTO; time: number };
+  [SimulationEventType.PROCESS_ARRIVAL]: { process: Process };
+  [SimulationEventType.PROCESS_SCHEDULED]: { process: Process; time: number };
+  [SimulationEventType.PROCESS_COMPLETED]: { process: Process; time: number };
+  [SimulationEventType.PROCESS_PREEMPTED]: { process: Process; time: number };
   [SimulationEventType.CONTEXT_SWITCH]: { from: string | null; to: string | null; time: number };
   [SimulationEventType.CPU_IDLE]: { time: number };
   [SimulationEventType.METRICS_UPDATED]: { metrics: MetricsDTO };

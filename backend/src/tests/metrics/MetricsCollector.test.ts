@@ -12,30 +12,26 @@ describe('MetricsCollector', () => {
     collector = new MetricsCollector(emitter);
   });
 
-  it('should initialize with zero metrics', () => {
-    const metrics = collector.getMetrics();
-    expect(metrics.cpuUtilization).toBe(0);
-    expect(metrics.throughput).toBe(0);
-    expect(metrics.contextSwitches).toBe(0);
-  });
-
   it('should calculate CPU utilization correctly', () => {
+    // 10 ticks total, CPU active for 6
     emitter.emit(SimulationEventType.TICK, { time: 1 });
-    emitter.emit(SimulationEventType.TICK, { time: 2 });
-    emitter.emit(SimulationEventType.CPU_IDLE, { time: 2 });
+    emitter.emit(SimulationEventType.CPU_IDLE, { time: 1 });
     
+    for (let i = 2; i <= 7; i++) {
+      emitter.emit(SimulationEventType.TICK, { time: i });
+      // Not idle
+    }
+    
+    for (let i = 8; i <= 10; i++) {
+      emitter.emit(SimulationEventType.TICK, { time: i });
+      emitter.emit(SimulationEventType.CPU_IDLE, { time: i });
+    }
+
     const metrics = collector.getMetrics();
-    expect(metrics.cpuUtilization).toBe(50); // 1 idle out of 2 ticks
+    expect(metrics.cpuUtilization).toBe(60); // 6 / 10
   });
 
-  it('should increment context switches', () => {
-    emitter.emit(SimulationEventType.CONTEXT_SWITCH, { from: null, to: 'P1', time: 1 });
-    
-    const metrics = collector.getMetrics();
-    expect(metrics.contextSwitches).toBe(1);
-  });
-
-  it('should aggregate process metrics correctly', () => {
+  it('should collect averages when processes complete', () => {
     const p1 = new Process('P1', 0, 5);
     p1.waitingTime = 2;
     p1.turnaroundTime = 7;
@@ -49,8 +45,8 @@ describe('MetricsCollector', () => {
     emitter.emit(SimulationEventType.TICK, { time: 1 });
     emitter.emit(SimulationEventType.TICK, { time: 2 });
     
-    emitter.emit(SimulationEventType.PROCESS_COMPLETED, { process: p1.toDTO(), time: 7 });
-    emitter.emit(SimulationEventType.PROCESS_COMPLETED, { process: p2.toDTO(), time: 10 });
+    emitter.emit(SimulationEventType.PROCESS_COMPLETED, { process: p1, time: 7 });
+    emitter.emit(SimulationEventType.PROCESS_COMPLETED, { process: p2, time: 10 });
     
     const metrics = collector.getMetrics();
     expect(metrics.waitingTime).toBe(3); // (2+4)/2

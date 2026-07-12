@@ -36,11 +36,11 @@ export class SocketServer {
     });
 
     this.engine.emitter.on(SimulationEventType.PROCESS_ARRIVAL, (payload) => {
-      this.io.emit('event', { type: 'PROCESS_ARRIVAL', payload });
+      this.io.emit('event', { type: 'PROCESS_ARRIVAL', payload: { ...payload, process: payload.process.toDTO() } });
     });
 
     this.engine.emitter.on(SimulationEventType.PROCESS_COMPLETED, (payload) => {
-      this.io.emit('event', { type: 'PROCESS_COMPLETED', payload });
+      this.io.emit('event', { type: 'PROCESS_COMPLETED', payload: { ...payload, process: payload.process.toDTO() } });
       this.io.emit('stateUpdate', this.engine.getState());
     });
 
