@@ -13,11 +13,22 @@ import type { ProcessDTO } from '@shared/types';
 import { apiClient } from './services/apiClient';
 
 function App() {
-  const { addEventLog, reset, hasStarted, isConnected } = useSimulationStore();
+  const { addEventLog, reset, hasStarted, isConnected, isApiReady } = useSimulationStore();
 
   useEffect(() => {
-    // Ensure we always start fresh on page load and avoid race conditions with socket connection
     const init = async () => {
+      let isReady = false;
+      while (!isReady) {
+        try {
+          await apiClient.healthCheck();
+          isReady = true;
+          useSimulationStore.getState().setIsApiReady(true);
+        } catch (e) {
+          console.log("Waiting for API to wake up...");
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
       try {
         await apiClient.reset();
       } catch (e) {
@@ -69,7 +80,7 @@ function App() {
     };
   }, []); // Remove addEventLog dependency to prevent multiple re-renders causing multiple resets
 
-  if (!isConnected) {
+  if (!isConnected || !isApiReady) {
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-pulse">

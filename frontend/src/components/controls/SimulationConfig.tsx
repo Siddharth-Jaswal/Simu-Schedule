@@ -37,10 +37,17 @@ export function SimulationConfig() {
     addQueuedProcess(newProcess);
   };
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleStart = async () => {
-    await apiClient.start(config, queuedWorkload);
-    setHasStarted(true);
-    setIsRunning(true);
+    try {
+      setError(null);
+      await apiClient.start(config, queuedWorkload);
+      setHasStarted(true);
+      setIsRunning(true);
+    } catch (e: any) {
+      setError(e.message || "Failed to start simulation. Check backend connection.");
+    }
   };
 
   const showQuantum = config.algorithm === 'RR' || config.algorithm === 'MLFQ';
@@ -192,8 +199,13 @@ export function SimulationConfig() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-10 flex justify-end relative z-10"
+          className="mt-10 flex flex-col items-end relative z-10"
         >
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">
+              {error}
+            </div>
+          )}
           <button 
             onClick={handleStart} 
             disabled={queuedWorkload.length === 0}

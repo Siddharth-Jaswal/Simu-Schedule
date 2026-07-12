@@ -2,33 +2,45 @@ import type { SimulationConfig, ProcessDTO } from '@shared/types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/simulation';
 
+const handleResponse = async (res: Response) => {
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Network or parsing error' }));
+    throw new Error(err.error || 'API request failed');
+  }
+  return res.json();
+};
+
 export const apiClient = {
+  healthCheck: async () => {
+    return fetch(`${API_BASE}/algorithms`).then(handleResponse);
+  },
+
   start: async (config: SimulationConfig, processes: ProcessDTO[]) => {
     return fetch(`${API_BASE}/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ config, processes }),
-    }).then(res => res.json());
+    }).then(handleResponse);
   },
   
   pause: async () => {
-    return fetch(`${API_BASE}/pause`, { method: 'POST' }).then(res => res.json());
+    return fetch(`${API_BASE}/pause`, { method: 'POST' }).then(handleResponse);
   },
   
   resume: async () => {
-    return fetch(`${API_BASE}/resume`, { method: 'POST' }).then(res => res.json());
+    return fetch(`${API_BASE}/resume`, { method: 'POST' }).then(handleResponse);
   },
   
   finish: async () => {
-    return fetch(`${API_BASE}/finish`, { method: 'POST' }).then(res => res.json());
+    return fetch(`${API_BASE}/finish`, { method: 'POST' }).then(handleResponse);
   },
   
   reset: async () => {
-    return fetch(`${API_BASE}/reset`, { method: 'POST' }).then(res => res.json());
+    return fetch(`${API_BASE}/reset`, { method: 'POST' }).then(handleResponse);
   },
   
   step: async () => {
-    return fetch(`${API_BASE}/step`, { method: 'POST' }).then(res => res.json());
+    return fetch(`${API_BASE}/step`, { method: 'POST' }).then(handleResponse);
   },
 
   setSpeed: async (speedMs: number) => {
@@ -36,12 +48,11 @@ export const apiClient = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ speedMs }),
-    }).then(res => res.json());
+    }).then(handleResponse);
   },
 
   getAlgorithms: async () => {
-    // algorithms is not technically under /simulation usually, but we mapped the whole router there
-    return fetch(`${API_BASE}/algorithms`).then(res => res.json());
+    return fetch(`${API_BASE}/algorithms`).then(handleResponse);
   },
 
   addProcess: async (process: ProcessDTO) => {
@@ -49,11 +60,6 @@ export const apiClient = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(process),
-    }).then(res => {
-      if (!res.ok) {
-        return res.json().then(err => { throw new Error(err.error) });
-      }
-      return res.json();
-    });
+    }).then(handleResponse);
   }
 };

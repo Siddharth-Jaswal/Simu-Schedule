@@ -5,6 +5,8 @@ interface SimulationStore {
   // Connection state
   isConnected: boolean;
   setIsConnected: (status: boolean) => void;
+  isApiReady: boolean;
+  setIsApiReady: (status: boolean) => void;
 
   // Simulation Data
   state: SimulationStateDTO | null;
@@ -51,6 +53,8 @@ const DEFAULT_CONFIG: SimulationConfig = {
 export const useSimulationStore = create<SimulationStore>((set) => ({
   isConnected: false,
   setIsConnected: (status) => set({ isConnected: status }),
+  isApiReady: false,
+  setIsApiReady: (status) => set({ isApiReady: status }),
   
   state: null,
   metricsHistory: [],
