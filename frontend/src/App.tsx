@@ -53,6 +53,7 @@ function App() {
     socketService.onEvent(handleEvent);
 
     return () => {
+      socketService.offEvent(handleEvent);
       socketService.disconnect();
     };
   }, [addEventLog]);

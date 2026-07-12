@@ -23,6 +23,16 @@ class SocketService {
     }
   }
 
+  private eventListeners: ((data: any) => void)[] = [];
+
+  public onEvent(callback: (data: any) => void): void {
+    this.eventListeners.push(callback);
+  }
+
+  public offEvent(callback: (data: any) => void): void {
+    this.eventListeners = this.eventListeners.filter(cb => cb !== callback);
+  }
+
   private setupListeners(): void {
     if (!this.socket) return;
 
@@ -40,13 +50,16 @@ class SocketService {
       useSimulationStore.getState().setState(state);
     });
 
-    this.socket.on('event', ({ type, payload }: { type: string, payload: any }) => {
-      // Handle discrete events (e.g., process arrival, completion)
+    this.socket.on('event', (data: { type: string, payload: any }) => {
+      const { type, payload } = data;
+      // Handle discrete events
       if (type === 'PROCESS_ARRIVAL' || type === 'PROCESS_COMPLETED' || type === 'PROCESS_SCHEDULED') {
         if (payload.process) {
           useSimulationStore.getState().addOrUpdateProcess(payload.process);
         }
       }
+      
+      this.eventListeners.forEach(cb => cb(data));
     });
   }
 }
