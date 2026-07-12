@@ -7,7 +7,8 @@ import { SimulationControls } from './components/controls/SimulationControls';
 import { CPUViewer } from './components/visualization/CPUViewer';
 import { QueueViewer } from './components/visualization/QueueViewer';
 import { MetricsChart } from './components/visualization/MetricsChart';
-import { DndContext, DragEndEvent } from '@dnd-kit/core';
+import { DndContext } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import { apiClient } from './services/apiClient';
 
 function App() {
