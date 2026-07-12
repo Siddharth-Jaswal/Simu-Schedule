@@ -19,6 +19,10 @@ export const apiClient = {
     return fetch(`${API_BASE}/resume`, { method: 'POST' }).then(res => res.json());
   },
   
+  finish: async () => {
+    return fetch(`${API_BASE}/finish`, { method: 'POST' }).then(res => res.json());
+  },
+  
   reset: async () => {
     return fetch(`${API_BASE}/reset`, { method: 'POST' }).then(res => res.json());
   },

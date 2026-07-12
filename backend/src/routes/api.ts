@@ -33,6 +33,11 @@ export function createApiRouter(engine: SimulationEngine): Router {
     res.json({ status: 'resumed' });
   });
 
+  router.post('/finish', (req, res) => {
+    engine.finish();
+    res.json({ status: 'finished', state: engine.getState() });
+  });
+
   router.post('/reset', (req, res) => {
     engine.reset();
     res.json({ status: 'reset' });

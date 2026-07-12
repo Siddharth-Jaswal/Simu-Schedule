@@ -71,6 +71,16 @@ export class SimulationEngine {
     this.clock.step();
   }
 
+  public finish(): void {
+    this.clock.pause();
+    let failsafe = 10000;
+    while (this.completedProcesses.length < this.allProcesses.length && failsafe > 0) {
+      this.clock.step();
+      failsafe--;
+    }
+    // Final state update will be emitted by the last TICK
+  }
+
   public setSpeed(speedMs: number): void {
     this.clock.setTickRate(speedMs);
   }

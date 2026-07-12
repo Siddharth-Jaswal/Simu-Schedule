@@ -23,11 +23,25 @@ interface SimulationStore {
   // App state
   isRunning: boolean;
   setIsRunning: (status: boolean) => void;
+  isFinishedInstantly: boolean;
+  setIsFinishedInstantly: (status: boolean) => void;
 
-  // Staging for Drag & Drop
+  // Staging for Drag & Drop (Dynamic Injection)
   stagedProcesses: ProcessDTO[];
   addStagedProcess: (process: ProcessDTO) => void;
   removeStagedProcess: (pid: string) => void;
+  showInjectModal: boolean;
+  setShowInjectModal: (show: boolean) => void;
+
+  // Pre-simulation Workload
+  queuedWorkload: ProcessDTO[];
+  addQueuedProcess: (process: ProcessDTO) => void;
+  removeQueuedProcess: (pid: string) => void;
+  editQueuedProcess: (process: ProcessDTO) => void;
+
+  // Event Log
+  eventLogs: string[];
+  addEventLog: (log: string) => void;
   
   reset: () => void;
 }
@@ -67,6 +81,8 @@ export const useSimulationStore = create<SimulationStore>((set) => ({
   
   isRunning: false,
   setIsRunning: (status) => set({ isRunning: status }),
+  isFinishedInstantly: false,
+  setIsFinishedInstantly: (status) => set({ isFinishedInstantly: status }),
 
   stagedProcesses: [],
   addStagedProcess: (process) => set((store) => ({
@@ -75,6 +91,33 @@ export const useSimulationStore = create<SimulationStore>((set) => ({
   removeStagedProcess: (pid) => set((store) => ({
     stagedProcesses: store.stagedProcesses.filter(p => p.pid !== pid)
   })),
+  showInjectModal: false,
+  setShowInjectModal: (show) => set({ showInjectModal: show }),
 
-  reset: () => set({ state: null, processes: {}, isRunning: false, stagedProcesses: [] })
+  queuedWorkload: [],
+  addQueuedProcess: (process) => set((store) => ({
+    queuedWorkload: [...store.queuedWorkload, process]
+  })),
+  removeQueuedProcess: (pid) => set((store) => ({
+    queuedWorkload: store.queuedWorkload.filter(p => p.pid !== pid)
+  })),
+  editQueuedProcess: (process) => set((store) => ({
+    queuedWorkload: store.queuedWorkload.map(p => p.pid === process.pid ? process : p)
+  })),
+
+  eventLogs: [],
+  addEventLog: (log) => set((store) => ({
+    eventLogs: [...store.eventLogs, log]
+  })),
+
+  reset: () => set({ 
+    state: null, 
+    processes: {}, 
+    isRunning: false, 
+    isFinishedInstantly: false,
+    stagedProcesses: [], 
+    eventLogs: [],
+    metricsHistory: [] 
+    // Notice: we don't clear queuedWorkload on reset so they can replay
+  })
 }));
