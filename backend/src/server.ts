@@ -12,7 +12,12 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
-const corsOrigin = process.env.CORS_ORIGIN || '*';
+let corsOrigin = process.env.CORS_ORIGIN || '*';
+// Fix common mistake where users forget the https:// scheme in CORS_ORIGIN
+if (corsOrigin !== '*' && !corsOrigin.startsWith('http://') && !corsOrigin.startsWith('https://')) {
+  corsOrigin = `https://${corsOrigin}`;
+}
+
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
