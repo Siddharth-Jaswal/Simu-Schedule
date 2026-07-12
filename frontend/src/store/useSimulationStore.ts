@@ -9,6 +9,8 @@ interface SimulationStore {
   // Simulation Data
   state: SimulationStateDTO | null;
   setState: (state: SimulationStateDTO) => void;
+  
+  metricsHistory: Array<{ clock: number; cpuUtilization: number; waitingTime: number }>;
 
   // Processes detail mapping (from arrival events)
   processes: Record<string, ProcessDTO>;
@@ -35,7 +37,20 @@ export const useSimulationStore = create<SimulationStore>((set) => ({
   setIsConnected: (status) => set({ isConnected: status }),
   
   state: null,
-  setState: (state) => set({ state }),
+  metricsHistory: [],
+  setState: (state) => set((store) => {
+    const history = [...store.metricsHistory];
+    if (state.clock > 0 && (!history.length || history[history.length - 1].clock !== state.clock)) {
+      history.push({
+        clock: state.clock,
+        cpuUtilization: state.metrics.cpuUtilization,
+        waitingTime: state.metrics.waitingTime
+      });
+    }
+    // Keep last 100 points
+    if (history.length > 100) history.shift();
+    return { state, metricsHistory: history };
+  }),
   
   processes: {},
   addOrUpdateProcess: (process) => set((store) => ({
