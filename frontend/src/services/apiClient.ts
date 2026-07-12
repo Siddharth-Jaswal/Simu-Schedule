@@ -1,6 +1,11 @@
 import type { SimulationConfig, ProcessDTO } from '@shared/types';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/simulation';
+let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/simulation';
+
+// Automatically correct the URL if the user forgot to append /api/simulation
+if (!API_BASE.includes('/api/simulation')) {
+  API_BASE = API_BASE.replace(/\/$/, '') + '/api/simulation';
+}
 
 const handleResponse = async (res: Response) => {
   if (!res.ok) {
