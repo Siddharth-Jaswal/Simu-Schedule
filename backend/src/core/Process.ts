@@ -49,16 +49,11 @@ export class Process {
     }
   }
 
-  public waitTick(): void {
-    if (this.state === 'READY') {
-      this.waitingTime += 1;
-    }
-  }
-
   public terminate(currentTime: number): void {
     this.state = 'TERMINATED';
-    this.completionTime = currentTime;
+    this.completionTime = currentTime + 1;
     this.turnaroundTime = this.completionTime - this.arrivalTime;
+    this.waitingTime = this.turnaroundTime - this.burstTime;
   }
 
   public isCompleted(): boolean {

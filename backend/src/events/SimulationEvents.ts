@@ -10,6 +10,7 @@ export enum SimulationEventType {
   CONTEXT_SWITCH = 'ContextSwitchEvent',
   CPU_IDLE = 'CPUIdleEvent',
   METRICS_UPDATED = 'MetricsUpdatedEvent',
+  SIMULATION_COMPLETED = 'SimulationCompletedEvent',
 }
 
 export interface SimulationEventPayloads {
@@ -21,4 +22,5 @@ export interface SimulationEventPayloads {
   [SimulationEventType.CONTEXT_SWITCH]: { from: string | null; to: string | null; time: number };
   [SimulationEventType.CPU_IDLE]: { time: number };
   [SimulationEventType.METRICS_UPDATED]: { metrics: MetricsDTO };
+  [SimulationEventType.SIMULATION_COMPLETED]: { time: number };
 }

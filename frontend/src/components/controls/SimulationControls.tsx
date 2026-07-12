@@ -3,7 +3,7 @@ import { apiClient } from '../../services/apiClient';
 import { useSimulationStore } from '../../store/useSimulationStore';
 
 export function SimulationControls() {
-  const { config, isRunning, setIsRunning, state, isFinishedInstantly, setIsFinishedInstantly, reset } = useSimulationStore();
+  const { config, isRunning, setIsRunning, state, isFinishedInstantly, setIsFinishedInstantly, isComplete, reset } = useSimulationStore();
   
   const handlePauseResume = async () => {
     if (isRunning) {
@@ -29,16 +29,15 @@ export function SimulationControls() {
     await apiClient.setSpeed(speed);
   };
 
-  const isCompleted = state && state.completed.length === state.metrics.throughput * (state.clock || 1); 
-  // Better completion check is checking if CPU is idle and queues are empty, but we'll use a simpler check:
-  // Usually if not running and we have state, it's either paused or completed.
-  
   let statusText = "Ready";
   let statusColor = "text-muted-foreground";
   
   if (state) {
     if (isFinishedInstantly) {
       statusText = "Completed (Instantly)";
+      statusColor = "text-sim-purple";
+    } else if (isComplete) {
+      statusText = "Completed";
       statusColor = "text-sim-purple";
     } else if (isRunning) {
       statusText = "Running";
@@ -82,15 +81,16 @@ export function SimulationControls() {
 
         <button 
           onClick={handlePauseResume} 
-          className={`${isRunning ? 'bg-sim-orange text-white' : 'bg-sim-green text-white'} px-4 py-2 rounded-md font-medium hover:opacity-90 transition-colors flex items-center gap-2`}
+          disabled={isComplete || isFinishedInstantly}
+          className={`${isRunning ? 'bg-sim-orange text-white' : 'bg-sim-green text-white'} px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {isRunning ? <><Square className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> {state?.clock && state.clock > 0 ? 'Resume' : 'Play'}</>}
         </button>
         
         <button 
           onClick={handleFinishInstantly}
-          disabled={!isRunning && !state}
-          className="bg-sim-purple text-white px-4 py-2 rounded-md font-medium hover:opacity-90 transition-colors flex items-center gap-2 disabled:opacity-50"
+          disabled={isComplete || isFinishedInstantly || (!isRunning && !state)}
+          className="bg-sim-purple text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <FastForward className="w-4 h-4" /> Finish Instantly
         </button>

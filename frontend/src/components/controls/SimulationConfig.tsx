@@ -1,29 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash, Play } from 'lucide-react';
+import { Plus, Trash, Play, Settings2, Cpu } from 'lucide-react';
 import { useSimulationStore } from '../../store/useSimulationStore';
 import { apiClient } from '../../services/apiClient';
 import type { ProcessDTO } from '@shared/types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function SimulationConfig() {
-  const { config, setConfig, queuedWorkload, addQueuedProcess, removeQueuedProcess, setIsRunning } = useSimulationStore();
+  const { state, config, setConfig, queuedWorkload, addQueuedProcess, removeQueuedProcess, setIsRunning, hasStarted, setHasStarted } = useSimulationStore();
   const [algorithms, setAlgorithms] = useState<string[]>([]);
   
-  const [arrivalTime, setArrivalTime] = useState(0);
-  const [burstTime, setBurstTime] = useState(5);
-  const [priority, setPriority] = useState(0);
+  const [arrivalTime, setArrivalTime] = useState<number | string>(0);
+  const [burstTime, setBurstTime] = useState<number | string>(5);
+  const [priority, setPriority] = useState<number | string>(0);
 
   useEffect(() => {
-    apiClient.getAlgorithms().then(setAlgorithms).catch(console.error);
+    apiClient.getAlgorithms()
+      .then(algs => setAlgorithms(algs.filter(a => a !== 'MLFQ')))
+      .catch(console.error);
   }, []);
 
   const handleAddWorkload = (e: React.FormEvent) => {
     e.preventDefault();
     const newProcess: ProcessDTO = {
-      pid: `P${Math.floor(Math.random() * 1000)}`,
-      arrivalTime,
-      burstTime,
-      priority,
-      remainingTime: burstTime,
+      pid: `P${queuedWorkload.length + 1}`,
+      arrivalTime: Number(arrivalTime) || 0,
+      burstTime: Number(burstTime) || 1,
+      priority: Number(priority) || 0,
+      remainingTime: Number(burstTime) || 1,
       waitingTime: 0,
       turnaroundTime: 0,
       completionTime: 0,
@@ -36,6 +39,7 @@ export function SimulationConfig() {
 
   const handleStart = async () => {
     await apiClient.start(config, queuedWorkload);
+    setHasStarted(true);
     setIsRunning(true);
   };
 
@@ -43,107 +47,140 @@ export function SimulationConfig() {
   const showPriority = config.algorithm === 'PRIORITY' || config.algorithm === 'PRIORITY_NP' || config.algorithm === 'MLFQ';
 
   return (
-    <div className="glass-panel p-6 rounded-2xl mb-8 border border-white/10">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-primary">
-        1. Simulation Configuration
+    <motion.div 
+      layout
+      className={`glass-panel p-6 sm:p-8 rounded-3xl mb-8 shadow-2xl relative overflow-hidden transition-all duration-500 ${hasStarted ? 'opacity-80 scale-[0.99] grayscale-[0.2]' : 'ring-1 ring-border/50'}`}
+    >
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+      
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 text-primary relative z-10">
+        <Settings2 className="w-6 h-6" />
+        Simulation Configuration
+        {hasStarted && <span className="text-xs bg-primary/20 text-primary px-3 py-1 rounded-full uppercase tracking-wider font-bold ml-4">Read Only</span>}
       </h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 relative z-10">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-muted-foreground">Algorithm</label>
+          <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Algorithm</label>
           <select 
-            className="bg-black/20 border border-white/10 rounded-md p-2 outline-none focus:ring-2 ring-primary"
+            disabled={hasStarted}
+            className="bg-black/5 dark:bg-black/30 border border-border/50 rounded-xl p-3 outline-none focus:ring-2 ring-primary transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed appearance-none text-foreground"
             value={config.algorithm}
             onChange={(e) => setConfig({ ...config, algorithm: e.target.value })}
           >
             {algorithms.map(alg => (
-              <option key={alg} value={alg} className="bg-background">{alg}</option>
+              <option key={alg} value={alg} className="bg-background text-foreground font-medium">{alg}</option>
             ))}
           </select>
         </div>
 
-        {showQuantum && (
-          <div className="flex flex-col gap-2 animate-in fade-in zoom-in duration-300">
-            <label className="text-sm font-medium text-muted-foreground">Time Quantum</label>
-            <input 
-              type="number" min="1" 
-              value={config.quantum} 
-              onChange={(e) => setConfig({ ...config, quantum: parseInt(e.target.value) || 2 })}
-              className="bg-black/20 border border-white/10 rounded-md p-2 outline-none focus:ring-2 ring-primary"
-            />
-          </div>
-        )}
+        <AnimatePresence>
+          {showQuantum && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex flex-col gap-2"
+            >
+              <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Time Quantum</label>
+              <input 
+                type="number" min="1" 
+                disabled={hasStarted}
+                value={config.quantum} 
+                onChange={(e) => setConfig({ ...config, quantum: parseInt(e.target.value) || 2 })}
+                className="bg-black/5 dark:bg-black/30 border border-border/50 rounded-xl p-3 outline-none focus:ring-2 ring-primary transition-all font-mono disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <hr className="border-white/5 my-6" />
+      <hr className="border-border/50 my-8 relative z-10" />
 
-      <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-sim-cyan">
-        Workload Builder
+      <h3 className="text-xl font-bold mb-6 flex items-center gap-3 text-primary relative z-10">
+        <Cpu className="w-5 h-5" />
+        Workload Staging
       </h3>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+        
         {/* Form */}
-        <form onSubmit={handleAddWorkload} className="flex flex-col gap-4 bg-black/10 p-4 rounded-xl border border-white/5 h-fit">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">Arrival Time</label>
-              <input type="number" min="0" value={arrivalTime} onChange={e => setArrivalTime(parseInt(e.target.value) || 0)} className="bg-black/20 border border-white/10 rounded px-2 py-1.5 outline-none focus:ring-1 ring-primary" required />
+        <div className="lg:col-span-4">
+          <form onSubmit={handleAddWorkload} className="flex flex-col gap-5 bg-card/50 dark:bg-black/20 p-6 rounded-2xl border border-border/50 shadow-inner relative overflow-hidden group">
+            <div className="absolute inset-0 bg-primary/5 translate-y-full group-hover:translate-y-0 transition-transform duration-700 ease-out"></div>
+            <div className="relative z-10 grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Arrival</label>
+                <input disabled={hasStarted} type="number" min="0" value={arrivalTime} onChange={e => setArrivalTime(e.target.value)} className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 outline-none focus:ring-2 ring-primary font-mono transition-all disabled:opacity-50 text-foreground" required />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Burst</label>
+                <input disabled={hasStarted} type="number" min="1" value={burstTime} onChange={e => setBurstTime(e.target.value)} className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 outline-none focus:ring-2 ring-primary font-mono transition-all disabled:opacity-50 text-foreground" required />
+              </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground">Burst Time</label>
-              <input type="number" min="1" value={burstTime} onChange={e => setBurstTime(parseInt(e.target.value) || 1)} className="bg-black/20 border border-white/10 rounded px-2 py-1.5 outline-none focus:ring-1 ring-primary" required />
-            </div>
-          </div>
-          
-          {showPriority && (
-            <div className="flex flex-col gap-1 animate-in slide-in-from-top-2">
-              <label className="text-xs text-muted-foreground">Priority (lower is higher)</label>
-              <input type="number" min="0" value={priority} onChange={e => setPriority(parseInt(e.target.value) || 0)} className="bg-black/20 border border-white/10 rounded px-2 py-1.5 outline-none focus:ring-1 ring-primary" required />
-            </div>
-          )}
+            
+            <AnimatePresence>
+              {showPriority && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex flex-col gap-2 relative z-10">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Priority <span className="opacity-50 lowercase normal-case">(lower is higher)</span></label>
+                  <input disabled={hasStarted} type="number" min="0" value={priority} onChange={e => setPriority(e.target.value)} className="bg-background/50 border border-border/50 rounded-lg px-3 py-2 outline-none focus:ring-2 ring-primary font-mono transition-all disabled:opacity-50 text-foreground" required />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <button type="submit" className="bg-secondary text-secondary-foreground py-2 rounded-md font-medium text-sm hover:bg-secondary/80 transition-colors flex items-center justify-center gap-2 mt-2">
-            <Plus className="w-4 h-4" /> Add to Workload
-          </button>
-        </form>
+            <button disabled={hasStarted} type="submit" className="relative z-10 mt-2 bg-foreground text-background py-3 rounded-xl font-bold hover:bg-primary hover:text-primary-foreground hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-20 disabled:cursor-not-allowed">
+              <Plus className="w-5 h-5" /> Stage Process
+            </button>
+          </form>
+        </div>
 
         {/* Queued Workload List */}
-        <div className="lg:col-span-2 bg-black/10 p-4 rounded-xl border border-white/5">
-          <h4 className="text-sm font-medium text-muted-foreground mb-3">Queued Processes ({queuedWorkload.length})</h4>
-          
+        <div className="lg:col-span-8 bg-card/50 dark:bg-black/20 p-1 rounded-2xl border border-border/50 flex flex-col h-full min-h-[250px]">
           {queuedWorkload.length === 0 ? (
-            <div className="text-sm text-muted-foreground/50 h-32 flex items-center justify-center border border-dashed border-white/10 rounded-lg">
-              No processes queued. Add some to start!
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/50 gap-3 border-2 border-dashed border-border/50 rounded-xl m-2">
+              <Cpu className="w-12 h-12 opacity-20" />
+              <p className="font-medium tracking-wide">No processes staged. Build your workload!</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl flex-1 m-2 custom-scrollbar">
               <table className="w-full text-sm text-left">
-                <thead className="text-xs text-muted-foreground bg-black/20 border-b border-white/10">
+                <thead className="text-xs text-muted-foreground bg-muted/80 dark:bg-black/60 sticky top-0 backdrop-blur-md z-20">
                   <tr>
-                    <th className="px-3 py-2 rounded-tl-lg">PID</th>
-                    <th className="px-3 py-2">Arrival</th>
-                    <th className="px-3 py-2">Burst</th>
-                    {showPriority && <th className="px-3 py-2">Priority</th>}
-                    <th className="px-3 py-2 rounded-tr-lg text-right">Actions</th>
+                    <th className="px-4 py-4 font-semibold uppercase tracking-wider rounded-tl-lg">PID</th>
+                    <th className="px-4 py-4 font-semibold uppercase tracking-wider">Arrival</th>
+                    <th className="px-4 py-4 font-semibold uppercase tracking-wider">Burst</th>
+                    {showPriority && <th className="px-4 py-4 font-semibold uppercase tracking-wider">Priority</th>}
+                    {!hasStarted && <th className="px-4 py-4 font-semibold uppercase tracking-wider text-right rounded-tr-lg">Actions</th>}
                   </tr>
                 </thead>
-                <tbody>
-                  {queuedWorkload.map(p => (
-                    <tr key={p.pid} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="px-3 py-2 font-mono flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></span>
-                        {p.pid}
-                      </td>
-                      <td className="px-3 py-2">{p.arrivalTime}</td>
-                      <td className="px-3 py-2">{p.burstTime}</td>
-                      {showPriority && <td className="px-3 py-2">{p.priority}</td>}
-                      <td className="px-3 py-2 text-right">
-                        <button onClick={() => removeQueuedProcess(p.pid)} className="text-red-400 hover:text-red-300">
-                          <Trash className="w-4 h-4 inline" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-border/30">
+                  <AnimatePresence>
+                    {queuedWorkload.map((p, idx) => (
+                      <motion.tr 
+                        key={p.pid} 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="hover:bg-accent/50 transition-colors group"
+                      >
+                        <td className="px-4 py-3 font-mono font-bold flex items-center gap-3">
+                          <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: p.color }}></span>
+                          <span className="text-foreground">{p.pid}</span>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-foreground/80">{p.arrivalTime}</td>
+                        <td className="px-4 py-3 font-mono text-foreground/80">{p.burstTime}</td>
+                        {showPriority && <td className="px-4 py-3 font-mono text-foreground/80">{p.priority}</td>}
+                        {!hasStarted && (
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => removeQueuedProcess(p.pid)} className="text-red-500/70 hover:text-red-500 bg-red-500/10 p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </td>
+                        )}
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
                 </tbody>
               </table>
             </div>
@@ -151,15 +188,23 @@ export function SimulationConfig() {
         </div>
       </div>
       
-      <div className="mt-8 flex justify-end">
-        <button 
-          onClick={handleStart} 
-          disabled={queuedWorkload.length === 0}
-          className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      {!hasStarted && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-10 flex justify-end relative z-10"
         >
-          <Play className="w-5 h-5" /> Start Simulation
-        </button>
-      </div>
-    </div>
+          <button 
+            onClick={handleStart} 
+            disabled={queuedWorkload.length === 0}
+            className="group relative bg-primary text-primary-foreground px-10 py-4 rounded-xl font-black text-lg hover:bg-primary/90 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden shadow-xl shadow-primary/20"
+          >
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            <Play className="w-6 h-6 relative z-10 fill-current" /> 
+            <span className="relative z-10">START SIMULATION</span>
+          </button>
+        </motion.div>
+      )}
+    </motion.div>
   );
 }

@@ -23,8 +23,12 @@ interface SimulationStore {
   // App state
   isRunning: boolean;
   setIsRunning: (status: boolean) => void;
+  hasStarted: boolean;
+  setHasStarted: (status: boolean) => void;
   isFinishedInstantly: boolean;
   setIsFinishedInstantly: (status: boolean) => void;
+  isComplete: boolean;
+  setIsComplete: (status: boolean) => void;
 
   // Staging for Drag & Drop (Dynamic Injection)
   stagedProcesses: ProcessDTO[];
@@ -81,18 +85,12 @@ export const useSimulationStore = create<SimulationStore>((set) => ({
   
   isRunning: false,
   setIsRunning: (status) => set({ isRunning: status }),
+  hasStarted: false,
+  setHasStarted: (status) => set({ hasStarted: status }),
   isFinishedInstantly: false,
   setIsFinishedInstantly: (status) => set({ isFinishedInstantly: status }),
-
-  stagedProcesses: [],
-  addStagedProcess: (process) => set((store) => ({
-    stagedProcesses: [...store.stagedProcesses, process]
-  })),
-  removeStagedProcess: (pid) => set((store) => ({
-    stagedProcesses: store.stagedProcesses.filter(p => p.pid !== pid)
-  })),
-  showInjectModal: false,
-  setShowInjectModal: (show) => set({ showInjectModal: show }),
+  isComplete: false,
+  setIsComplete: (status) => set({ isComplete: status }),
 
   queuedWorkload: [],
   addQueuedProcess: (process) => set((store) => ({
@@ -114,7 +112,9 @@ export const useSimulationStore = create<SimulationStore>((set) => ({
     state: null, 
     processes: {}, 
     isRunning: false, 
+    hasStarted: false,
     isFinishedInstantly: false,
+    isComplete: false,
     stagedProcesses: [], 
     eventLogs: [],
     metricsHistory: [] 

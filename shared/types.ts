@@ -23,6 +23,12 @@ export interface MetricsDTO {
   contextSwitches: number;
 }
 
+export interface ExecutionSlice {
+  pid: string;
+  start: number;
+  end: number;
+}
+
 export interface SimulationStateDTO {
   clock: number;
   cpu: { running: string | null };
@@ -30,6 +36,7 @@ export interface SimulationStateDTO {
   waitingQueue: string[];
   completed: string[];
   metrics: MetricsDTO;
+  executionHistory: ExecutionSlice[];
 }
 
 export interface SimulationConfig {

@@ -8,21 +8,24 @@ import { LiveVisualization } from './components/visualization/LiveVisualization'
 import { CompletedTable } from './components/visualization/CompletedTable';
 import { GlobalMetrics } from './components/visualization/GlobalMetrics';
 import { EventLogConsole } from './components/visualization/EventLogConsole';
-import { FloatingInjectModal } from './components/controls/FloatingInjectModal';
-import { DndContext, DragOverlay } from '@dnd-kit/core';
-import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import type { ProcessDTO } from '@shared/types';
 import { apiClient } from './services/apiClient';
-import { Plus } from 'lucide-react';
-import { DraggableProcess } from './components/controls/DraggableProcess';
-import { ProcessNode } from './components/visualization/ProcessNode';
-import { useState } from 'react';
 
 function App() {
-  const { state, removeStagedProcess, setShowInjectModal, stagedProcesses, addEventLog } = useSimulationStore();
+  const { state, addEventLog, setIsRunning, setIsComplete, reset, hasStarted } = useSimulationStore();
 
   useEffect(() => {
-    socketService.connect();
+    // Ensure we always start fresh on page load and avoid race conditions with socket connection
+    const init = async () => {
+      try {
+        await apiClient.reset();
+      } catch (e) {
+        console.error("Failed to reset backend:", e);
+      }
+      reset();
+      socketService.connect();
+    };
+    init();
     
     // Subscribe to events for EventLogConsole
     const handleEvent = (data: { type: string, payload: { process?: ProcessDTO, time?: number, from?: string, to?: string }}) => {
@@ -49,6 +52,11 @@ function App() {
             addEventLog(`[Tick ${t}] CPU idle -> Context Switch to ${payload.to}.`);
           }
           break;
+        case 'SIMULATION_COMPLETED':
+          addEventLog(`[Tick ${t}] Simulation Completed.`);
+          useSimulationStore.getState().setIsRunning(false);
+          useSimulationStore.getState().setIsComplete(true);
+          break;
       }
     };
 
@@ -58,96 +66,34 @@ function App() {
       socketService.offEvent(handleEvent);
       socketService.disconnect();
     };
-  }, [addEventLog]);
-
-  const [activeDragProcess, setActiveDragProcess] = useState<ProcessDTO | null>(null);
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const processDto = active.data.current?.process;
-    if (processDto) setActiveDragProcess(processDto);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveDragProcess(null);
-    const { over, active } = event;
-    if (over && over.id === 'ready-queue-dropzone') {
-      const processDto = active.data.current?.process;
-      if (processDto) {
-        try {
-          // Optimistic UI
-          removeStagedProcess(processDto.pid);
-          // Send to backend
-          await apiClient.addProcess(processDto);
-        } catch (e) {
-          console.error("Failed to add process:", e);
-        }
-      }
-    }
-  };
-
-  const hasStarted = state !== null;
+  }, []); // Remove addEventLog dependency to prevent multiple re-renders causing multiple resets
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <MainLayout>
-        
-        {/* SECTION 1: Config & Workload */}
-        {!hasStarted ? (
-          <SimulationConfig />
-        ) : (
-          <>
-            {/* SECTION 2: Controls */}
-            <SimulationControls />
-            
-            {/* SECTION 3: Live Visualization */}
-            <LiveVisualization />
-            
-            {/* SECTION 4: Completed Processes */}
-            <CompletedTable />
-            
-            {/* SECTION 5: Live Metrics */}
-            <GlobalMetrics />
-            
-            {/* SECTION 6: Event Log */}
-            <EventLogConsole />
-          </>
-        )}
-
-      </MainLayout>
+    <MainLayout>
       
-      <FloatingInjectModal />
-      
-      {/* Floating Action Button for Inject */}
-      {hasStarted && (
-        <div className="fixed bottom-8 right-8 z-40 flex flex-col items-end gap-4">
-          {/* Render draggable processes if they are staged */}
-          {stagedProcesses.map(p => (
-            <div key={p.pid} className="animate-in slide-in-from-right bg-black/60 p-2 rounded-xl backdrop-blur-md border border-white/20 shadow-2xl flex flex-col items-center gap-1">
-              <span className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider">Drag to Queue</span>
-              <DraggableProcess process={p} />
-            </div>
-          ))}
+      {/* SECTION 1: Config & Workload */}
+      {!hasStarted ? (
+        <SimulationConfig />
+      ) : (
+        <>
+          {/* SECTION 2: Controls */}
+          <SimulationControls />
           
-          <button 
-            onClick={() => setShowInjectModal(true)}
-            className="w-14 h-14 bg-sim-cyan text-black rounded-full shadow-lg hover:shadow-sim-cyan/20 hover:scale-105 transition-all flex items-center justify-center border border-white/20"
-            title="Inject Process"
-          >
-            <Plus className="w-6 h-6" />
-          </button>
-        </div>
+          {/* SECTION 3: Live Visualization */}
+          <LiveVisualization />
+          
+          {/* SECTION 4: Completed Processes */}
+          <CompletedTable />
+          
+          {/* SECTION 5: Live Metrics */}
+          <GlobalMetrics />
+          
+          {/* SECTION 6: Event Log */}
+          <EventLogConsole />
+        </>
       )}
 
-      <DragOverlay dropAnimation={null}>
-        {activeDragProcess ? (
-          <div className="opacity-90 scale-105 shadow-2xl cursor-grabbing">
-            <ProcessNode process={activeDragProcess} />
-          </div>
-        ) : null}
-      </DragOverlay>
-      
-    </DndContext>
+    </MainLayout>
   );
 }
 

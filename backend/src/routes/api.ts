@@ -13,6 +13,23 @@ export function createApiRouter(engine: SimulationEngine): Router {
       return res.status(400).json({ error: 'Missing config or processes' });
     }
 
+    const seenPids = new Set<string>();
+    for (const p of processes) {
+      if (p.burstTime <= 0) {
+        return res.status(400).json({ error: `Process ${p.pid} has invalid burst time` });
+      }
+      if (p.arrivalTime < 0) {
+        return res.status(400).json({ error: `Process ${p.pid} has invalid arrival time` });
+      }
+      if (p.priority < 0) {
+        return res.status(400).json({ error: `Process ${p.pid} has invalid priority` });
+      }
+      if (seenPids.has(p.pid)) {
+        return res.status(400).json({ error: `Duplicate process ID found: ${p.pid}` });
+      }
+      seenPids.add(p.pid);
+    }
+
     const processModels = processes.map(p => 
       new Process(p.pid, p.arrivalTime, p.burstTime, p.priority || 0, p.color || '#ffffff')
     );

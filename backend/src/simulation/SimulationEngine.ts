@@ -23,6 +23,7 @@ export class SimulationEngine {
   private readyQueue: Process[] = [];
   private waitingProcesses: Process[] = [];
   private completedProcesses: Process[] = [];
+  private executionHistory: import('@shared/types').ExecutionSlice[] = [];
 
   constructor() {
     this.emitter = new SimulationEventEmitter();
@@ -63,6 +64,7 @@ export class SimulationEngine {
     this.readyQueue = [];
     this.waitingProcesses = [];
     this.completedProcesses = [];
+    this.executionHistory = [];
     this.strategy = null;
     this.dispatcher.unloadProcess(0);
   }
@@ -94,7 +96,8 @@ export class SimulationEngine {
       readyQueue: this.readyQueue.map(p => p.pid),
       waitingQueue: this.waitingProcesses.map(p => p.pid),
       completed: this.completedProcesses.map(p => p.pid),
-      metrics: this.metricsCollector.getMetrics()
+      metrics: this.metricsCollector.getMetrics(),
+      executionHistory: this.executionHistory
     };
   }
 
@@ -139,20 +142,29 @@ export class SimulationEngine {
 
     this.readyQueue = updatedQueue;
 
-    // 3. Increase wait time for processes left in ready queue
-    for (const p of this.readyQueue) {
-      p.waitTick();
-    }
-
-    // 4. Dispatcher context switch
+    // 3. Dispatcher context switch
     this.dispatcher.dispatch(nextProcess, currentTime);
 
-    // 5. CPU executes
+    // 4. CPU executes
     this.cpu.executeTick(currentTime);
+
+    const ranProcess = this.cpu.getRunningProcess();
+    // if the process was just completed in executeTick, getRunningProcess will be null!
+    // wait, I need to know which process executed THIS tick!
+    // `nextProcess` is the one that was dispatched and executed!
+    if (nextProcess) {
+      const lastSlice = this.executionHistory[this.executionHistory.length - 1];
+      if (lastSlice && lastSlice.pid === nextProcess.pid && lastSlice.end === currentTime) {
+        lastSlice.end = currentTime + 1;
+      } else {
+        this.executionHistory.push({ pid: nextProcess.pid, start: currentTime, end: currentTime + 1 });
+      }
+    }
 
     // Optional check: if all processes are completed, auto-pause
     if (this.completedProcesses.length === this.allProcesses.length && this.allProcesses.length > 0) {
       this.clock.pause();
+      this.emitter.emit(SimulationEventType.SIMULATION_COMPLETED, { time: currentTime + 1 });
     }
   }
 }

@@ -41,11 +41,15 @@ export class SocketServer {
 
     this.engine.emitter.on(SimulationEventType.PROCESS_COMPLETED, (payload) => {
       this.io.emit('event', { type: 'PROCESS_COMPLETED', payload: { ...payload, process: payload.process.toDTO() } });
-      this.io.emit('stateUpdate', this.engine.getState());
     });
 
     this.engine.emitter.on(SimulationEventType.CONTEXT_SWITCH, (payload) => {
       this.io.emit('event', { type: 'CONTEXT_SWITCH', payload });
+    });
+
+    this.engine.emitter.on(SimulationEventType.SIMULATION_COMPLETED, (payload) => {
+      this.io.emit('event', { type: 'SIMULATION_COMPLETED', payload });
+      this.io.emit('stateUpdate', this.engine.getState());
     });
   }
 }
